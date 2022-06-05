@@ -28,8 +28,8 @@ The output is the Python module bound to stella_vslam: one file with name like *
 # Test
 In order to test your module you need two files in your working folder:
 
-- (equirectangular.yaml)[https://github.com/stella-cv/stella_vslam/blob/main/example/aist/equirectangular.yaml]
-- (orb_vocab.fbow)[https://github.com/stella-cv/FBoW_orb_vocab/raw/main/orb_vocab.fbow]
+- [equirectangular.yaml](https://github.com/stella-cv/stella_vslam/blob/main/example/aist/equirectangular.yaml)
+- [orb_vocab.fbow](https://github.com/stella-cv/FBoW_orb_vocab/raw/main/orb_vocab.fbow)
 
 Simply run test.py on a terminal:
 
@@ -47,7 +47,7 @@ If the test doesn't end in error, congratulations, your module works well.
 # Example
 The example shows how to use stella_vslam by feeding the system with images from a video.  You can easyly modify it to feed images from your webcam.  Keep in mind the configuration file must correspond to the feeding camera.
 
-The example need the vocabulary file.  For a quick demo, you can use the same configuration file used in testing (equirectangular.yaml), and get a short video with that exact omnidirectional camera (from this zip file)[https://drive.google.com/uc?export=download&id=1d8kADKWBptEqTF7jEVhKatBEdN7g0ikY].
+The example need the vocabulary file.  For a quick demo, you can use the same configuration file used in testing (equirectangular.yaml), and get a short video with that exact omnidirectional camera [from this zip file](https://drive.google.com/uc?export=download&id=1d8kADKWBptEqTF7jEVhKatBEdN7g0ikY).
 
 Placing video.mp4 in the same folder, you can run on a terminal:
 
