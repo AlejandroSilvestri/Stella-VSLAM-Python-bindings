@@ -59,3 +59,7 @@ You will see de video on a window, and the pose matrix returned by stella_vslam 
 Please refer to LICENSE.
 In brief, no special requirements but mention the authors in your distributions.  So little, so easy, there are no excuses not to do it.
 Keep in mind that Stella VSLAM may be considered a derivative work from ORB-SLAM2, so GPL licenses can apply to Stella VSLAM - but not to these bindings.
+
+# Thanks
+
+To [Squiro](https://github.com/Squiro), who found the incompatibility between [openvslam_bindings](https://github.com/AlejandroSilvestri/OpenVSLAM-Python-bindings) and stella_vslam, warned me and quickly elaborated and tested a [solution](https://github.com/Squiro/StellaVSLAM-Python-bindings) I'm using here.
