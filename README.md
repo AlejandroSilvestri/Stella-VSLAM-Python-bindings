@@ -17,6 +17,8 @@ You need to have installed:
 - Python 3: is usually already installed on your Linux
 - PyBind11: you can install it by terminal:
 
+.
+
     sudo apt install pybind11-dev
 
 The only file required to compile is `stella_vslam_bindings.cpp` .  You can download it or the whole repository, so you get the two test Python programs.
@@ -49,7 +51,7 @@ The example shows how to use stella_vslam by feeding the system with images from
 
 The example need the vocabulary file.  For a quick demo, you can use the same configuration file used in testing (equirectangular.yaml), and get a short video with that exact omnidirectional camera [from this zip file](https://drive.google.com/uc?export=download&id=1d8kADKWBptEqTF7jEVhKatBEdN7g0ikY).
 
-Placing video.mp4 in the same folder, you can run on a terminal:
+Placing `video.mp4` in the same folder, you can run on a terminal:
 
     python3 example.py
 
