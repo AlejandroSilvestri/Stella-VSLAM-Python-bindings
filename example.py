@@ -4,7 +4,7 @@ It only shows the pose matrix and the video feed.
 It doesn't show map nor features.
 
 Command line example:
-python3 test2.py -c ./aist_living_lab_1/config.yaml -m ./aist_living_lab_1/video.mp4
+python3 example.py -c ./equirectangular.yaml -m ./aist_living_lab_1/video.mp4
 
 Valid pose only after initialization.
 You can check the pose is valid when last row is 0,0,0,1 .

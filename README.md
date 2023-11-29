@@ -55,6 +55,10 @@ Placing video.mp4 in the same folder, you can run on a terminal:
 
 You will see de video on a window, and the pose matrix returned by stella_vslam on the terminal.
 
+example pangolin.py works similar, but also opens Pangolin gui.
+
+example cam.py is similar to the latter, over the camera instead of video.  You need a configuration file with your camera calibration parameters.
+
 # License
 Please refer to LICENSE.
 In brief, no special requirements but mention the authors in your distributions.  So little, so easy, there are no excuses not to do it.

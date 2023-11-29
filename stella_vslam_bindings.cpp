@@ -7,18 +7,32 @@
  * Libraries:
  * - opencv_core
  * - stella_vlam
+ * - 
  */
+#define WITH_PANGOLIN
+
 #include <Python.h>
 #include <pybind11/stl.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
 #include <opencv2/core/core.hpp>
 #include <stella_vslam/system.h>
-#include <stella_vslam/config.h>	//#include "nlohmann/json_fwd.hpp"
+#include <stella_vslam/config.h>
 #include <stella_vslam/type.h>
+#ifdef WITH_PANGOLIN
+    #include <stella_vslam/publish/map_publisher.h>
+    #include <stella_vslam/publish/frame_publisher.h>
+    #include <pangolin_viewer/viewer.h>
+#endif
 #include <yaml-cpp/yaml.h>
-//#include <utility>
+#include <iostream>
 
+#define Py_LIMITED_API 1
+
+#if CV_MAJOR_VERSION < 4
+// OpenCV 4 adopts AccessFlag type instead of int
+typedef int AccessFlag;
+#endif
 
 namespace py = pybind11;
 
@@ -40,7 +54,7 @@ public:
     static handle cast(const cv::Mat &m, return_value_policy, handle defval){
         return handle(NDArrayConverter::toNDArray(m));
     }
-};    
+};
 }} // namespace pybind11::detail
 
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
@@ -123,12 +137,7 @@ public:
         return u;
     }
 
-#if CV_MAJOR_VERSION < 4
-    UMatData* allocate(int dims0, const int* sizes, int type, void* data, size_t* step, int flags, UMatUsageFlags usageFlags) const
-#else
-    UMatData* allocate(int dims0, const int* sizes, int type, void* data, size_t* step, AccessFlag flags, UMatUsageFlags usageFlags) const
-#endif
-    {
+    UMatData* allocate(int dims0, const int* sizes, int type, void* data, size_t* step, AccessFlag flags, UMatUsageFlags usageFlags) const {
         if( data != 0 ){
             CV_Error(Error::StsAssert, "The data should normally be NULL!");
             // probably this is safe to do in such extreme case
@@ -155,12 +164,7 @@ public:
         return allocate(o, dims0, sizes, type, step);
     }
 
-#if CV_MAJOR_VERSION < 4
-    bool allocate(UMatData* u, int accessFlags, UMatUsageFlags usageFlags) const
-#else
-    bool allocate(UMatData* u, AccessFlag accessFlags, UMatUsageFlags usageFlags) const
-#endif
-    {
+    bool allocate(UMatData* u, AccessFlag accessFlags, UMatUsageFlags usageFlags) const {
         return stdAllocator->allocate(u, accessFlags, usageFlags);
     }
 
@@ -371,16 +375,17 @@ PYBIND11_MODULE(stellavslam, m){
 
     py::class_<config, std::shared_ptr<config>>(m, "config")
         .def(py::init<const std::string&>(), py::arg("config_file_path"))
-        .def(py::init<const YAML::Node&, const std::string&>(), py::arg("yaml_node"), py::arg("config_file_path") = "");
+        .def(py::init<const YAML::Node&, const std::string&>(), py::arg("yaml_node"), py::arg("config_file_path") = "")
+        .def_readonly("yaml_node_", &config::yaml_node_)
+        ;
 
-    py::class_<stella_vslam::system>(m, "system")
+    py::class_<stella_vslam::system, std::shared_ptr<stella_vslam::system>>(m, "system")
         // Init & finish
         .def(py::init<const std::shared_ptr<config>&, const std::string&>(), py::arg("cfg"), py::arg("vocab_file_path"))
         .def("startup", &system::startup, py::arg("need_initialize") = true)
         .def("shutdown", &system::shutdown)
 
         // Feed image
-        //.def("feed_monocular_frame", &system::feed_monocular_frame, py::arg("img"), py::arg("timestamp")=0.0, py::arg("mask") = cv::Mat{})
         .def("feed_monocular_frame", 
             [](stella_vslam::system &self, const cv::Mat &img, const double timestamp, const cv::Mat &mask) {
                 return ptr2pose(self.feed_monocular_frame(img, timestamp, mask));
@@ -395,6 +400,12 @@ PYBIND11_MODULE(stellavslam, m){
 
         .def("save_frame_trajectory", &system::save_frame_trajectory, py::arg("path"), py::arg("format"))
         .def("save_keyframe_trajectory", &system::save_keyframe_trajectory, py::arg("path"), py::arg("format"))
+
+#ifdef WITH_PANGOLIN
+        // Viewer
+        .def("get_map_publisher", &system::get_map_publisher)
+        .def("get_frame_publisher", &system::get_frame_publisher)
+#endif
 
         // System controls
         .def("mapping_module_is_enabled", &system::mapping_module_is_enabled)
@@ -418,4 +429,74 @@ PYBIND11_MODULE(stellavslam, m){
         .def("terminate_is_requested", &system::terminate_is_requested)
         .def("request_terminate", &system::request_terminate)
         ;
+
+#ifdef WITH_PANGOLIN
+    // Viewer
+    py::class_<pangolin_viewer::viewer>(m, "viewer")
+        //.def(py::init(&viewer_factory))
+        .def(py::init([](
+            const YAML::Node& yaml_node_, 
+            std::shared_ptr<stella_vslam::system> system
+        ){
+            return new pangolin_viewer::viewer(
+                yaml_node_,
+                std::shared_ptr<stella_vslam::system>(system),
+                system->get_frame_publisher(),
+                system->get_map_publisher()
+            );
+        }))
+        .def(py::init([](
+            const std::shared_ptr<config> cfg, 
+            const std::shared_ptr<stella_vslam::system> system
+        ){
+            std::cout << "Instanciando viewer..." << std::endl;
+            // This factory is extracted from an stella_vslam example, but this produces unique_ptr
+            // https://github.com/stella-cv/stella_vslam_examples/blob/1c0433867cba5d110fd94bbc609468650a2f7885/src/run_camera_slam.cc#L52
+            return std::unique_ptr<pangolin_viewer::viewer>(new pangolin_viewer::viewer(
+                stella_vslam::util::yaml_optional_ref(cfg->yaml_node_, "PangolinViewer"),
+                system, 
+                system->get_frame_publisher(), 
+                system->get_map_publisher()
+            ));
+        }))
+        
+        // https://stackoverflow.com/questions/60410178/how-to-invoke-python-function-as-a-callback-inside-c-thread-using-pybind11
+        // Python GIL pervents us from parallelizing SLAM and the viewer using threads. We allow parallelization by adding a call guard
+        .def("run", &pangolin_viewer::viewer::run, py::call_guard<py::gil_scoped_release>())
+        .def("request_terminate", &pangolin_viewer::viewer::request_terminate)
+        
+        // Not recommended, but useful to test stuff and avoid the GIL
+        .def("run_in_detached_thread",
+            [](pangolin_viewer::viewer &self){                
+                std::thread thread([&]() {
+                    std::cout << "Running viewer" << "\n";
+                    self.run();
+                });
+                thread.detach();                
+            },
+            py::call_guard<py::gil_scoped_release>()
+        )
+        ;
+
+    py::class_<YAML::Node>(m, "YamlNode")
+        .def(py::init<const std::string &>())
+        .def("__getitem__",
+            [](const YAML::Node node, const std::string& key){
+              return node[key];
+            })
+        .def("__iter__",
+            [](const YAML::Node &node) {
+              return py::make_iterator(node.begin(), node.end());},
+             py::keep_alive<0, 1>())
+        .def("__str__",
+             [](const YAML::Node& node) {
+               YAML::Emitter out;
+               out << node;
+               return std::string(out.c_str());
+             })
+        .def("type", &YAML::Node::Type)
+        .def("__len__", &YAML::Node::size)
+        ;      
+#endif
+
 }

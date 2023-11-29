@@ -9,7 +9,7 @@ Camera:
   setup: "monocular"
   model: "equirectangular"
 
-  fps: 30.0
+  fps: 10.0
   cols: 1920
   rows: 960
 
@@ -54,3 +54,19 @@ LoopDetector:
   enabled: true
   reject_by_graph_distance: true
   min_distance_on_graph: 50
+
+#===========================#
+# PangolinViewer Parameters #
+#===========================#
+
+PangolinViewer:
+  keyframe_size: 0.06
+  keyframe_line_width: 1
+  graph_line_width: 1
+  point_size: 2
+  camera_size: 0.07
+  camera_line_width: 2
+  viewpoint_x: 0
+  viewpoint_y: -20
+  viewpoint_z: -0.1
+  viewpoint_f: 2800
